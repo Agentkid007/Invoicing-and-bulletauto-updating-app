@@ -1,0 +1,78 @@
+{
+  "name": "bulletauto",
+  "version": "2.0.0",
+  "description": "BulletAuto — Invoicing & Service-Booking Desktop App",
+  "author": "Bullet Auto Performance <admin@bulletauto.co.za>",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start-backend": "cd backend && node server.js",
+    "start-client": "cd client && npm run dev",
+    "start-electron": "wait-on http://localhost:3000 http://localhost:4000 && electron .",
+    "start:all": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" --names \"BACKEND,CLIENT,ELECTRON\" \"npm run start-backend\" \"npm run start-client\" \"npm run start-electron\"",
+    "dev:all": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" --names \"BACKEND,CLIENT,ELECTRON\" \"cd backend && nodemon server.js\" \"npm run start-client\" \"npm run start-electron\"",
+    "build:client": "cd client && npm run build",
+    "electron-build": "npm run build:client && electron-builder --win --x64",
+    "install:all": "npm install && cd backend && npm install && cd ../client && npm install && cd ../electron && npm install"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^28.2.0",
+    "electron-builder": "^25.1.8",
+    "nodemon": "^3.0.3",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "co.bulletauto.app",
+    "productName": "BulletAuto",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "client/dist/**/*",
+      "backend/**/*",
+      "!backend/node_modules/**/*",
+      "!**/node_modules/**/.cache/**"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*", "!node_modules"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "electron/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BulletAuto"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "electron/assets/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Agentkid007",
+      "repo": "Invoicing-and-bulletauto-updating-app"
+    }
+  }
+}
