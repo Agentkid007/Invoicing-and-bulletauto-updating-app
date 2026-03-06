@@ -1,0 +1,188 @@
+/* ── SplashAnimation.css ─────────────────────────────────────────────────────
+ * 4-phase startup animation for BulletAuto / Kiddy Productions
+ *
+ * Phase 0 – intro  : emblem rotates in with blue wheel-spin glow
+ * Phase 1 – reveal : monitor slides up, smile clip expands
+ * Phase 2 – text   : KIDDY wipes in, PRODUCTIONS fades in
+ * Phase 3 – outro  : blue pulse radiates outward, settles to logo
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── Full-screen overlay ─────────────────────────────────────────────────── */
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.splash-overlay.splash-exiting {
+  animation: splashFadeOut 0.45s ease forwards;
+}
+
+@keyframes splashFadeOut {
+  to { opacity: 0; }
+}
+
+/* ── Center container ────────────────────────────────────────────────────── */
+.splash-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* ── Emblem wrapper ──────────────────────────────────────────────────────── */
+.splash-emblem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+}
+
+/* The SVG logo element */
+.splash-logo-svg {
+  width: 200px;
+  height: 200px;
+  filter: drop-shadow(0 0 18px rgba(33, 150, 243, 0.9));
+}
+
+/* ── Phase 0: INTRO — rotate in like a BMW wheel ─────────────────────────── */
+.splash-phase-intro .splash-emblem {
+  animation: emblemRotateIn 0.72s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes emblemRotateIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-270deg);
+    filter: drop-shadow(0 0 0px rgba(33, 150, 243, 0));
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.08) rotate(15deg);
+    filter: drop-shadow(0 0 32px rgba(33, 150, 243, 1));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 20px rgba(33, 150, 243, 0.85));
+  }
+}
+
+/* ── Phase 1: REVEAL — smile fades in, monitor slides up ────────────────── */
+.splash-phase-reveal .splash-emblem {
+  animation: emblemPulse 0.55s ease forwards;
+}
+
+@keyframes emblemPulse {
+  0%   { filter: drop-shadow(0 0 20px rgba(33, 150, 243, 0.85)); }
+  50%  { filter: drop-shadow(0 0 38px rgba(33, 150, 243, 1)); transform: scale(1.04); }
+  100% { filter: drop-shadow(0 0 22px rgba(33, 150, 243, 0.9)); transform: scale(1); }
+}
+
+/* Smile element – hidden by default, fades in once .visible is set */
+.splash-smile {
+  opacity: 0;
+}
+.splash-smile.visible {
+  animation: smileFadeIn 0.4s ease 0.1s forwards;
+}
+@keyframes smileFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Monitor outline – slides up once .visible is set */
+.splash-monitor-frame {
+  transform: translateY(30px);
+  opacity: 0;
+}
+.splash-monitor-frame.visible {
+  animation: monitorSlideUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
+}
+@keyframes monitorSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Phase 2: TEXT — KIDDY wipes in, PRODUCTIONS fades in ───────────────── */
+.splash-text {
+  margin-top: 20px;
+  text-align: center;
+  line-height: 1.15;
+  height: 72px; /* reserve space to prevent layout shift */
+}
+
+.splash-brand-name {
+  font-family: 'Orbitron', 'Roboto', sans-serif;
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, #1565c0 0%, #42a5f5 50%, #1565c0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  clip-path: inset(0 100% 0 0);
+  opacity: 0;
+}
+
+.splash-brand-name.visible {
+  animation: kiddyWipe 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes kiddyWipe {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0%   0 0); opacity: 1; }
+}
+
+.splash-brand-sub {
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 5px;
+  color: rgba(180, 195, 220, 0.85);
+  text-transform: uppercase;
+  opacity: 0;
+}
+
+.splash-brand-sub.visible {
+  animation: productionsFadeIn 0.45s ease 0.35s forwards;
+}
+
+@keyframes productionsFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Phase 3: OUTRO — blue pulse radiates outward ───────────────────────── */
+.splash-pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.splash-phase-outro .splash-pulse-ring {
+  animation: pulsateRing 0.85s ease-out forwards;
+}
+
+@keyframes pulsateRing {
+  0%   { width: 180px; height: 180px; opacity: 0.85; border: 2px solid #2196f3; top: 10px; left: 10px; }
+  100% { width: 340px; height: 340px; opacity: 0;    border: 1px solid #2196f3; top: -70px; left: -70px; }
+}
+
+.splash-phase-outro .splash-emblem {
+  animation: emblemSettle 0.7s ease forwards;
+}
+
+@keyframes emblemSettle {
+  0%   { filter: drop-shadow(0 0 22px rgba(33, 150, 243, 0.9)); }
+  50%  { filter: drop-shadow(0 0 40px rgba(33, 150, 243, 1)); transform: scale(1.03); }
+  100% { filter: drop-shadow(0 0 12px rgba(33, 150, 243, 0.6)); transform: scale(1); }
+}

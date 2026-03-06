@@ -5,6 +5,7 @@
  *  • Auth context (token + user stored in AsyncStorage)
  *  • React Navigation stack
  *  • Dark theme (background #0A0A0A, accent #F5A623)
+ *  • Kiddy Productions splash animation shown while app data loads
  */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -12,6 +13,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import SplashScreen from './src/screens/SplashScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import BookingDetailScreen from './src/screens/BookingDetailScreen';
@@ -70,7 +72,9 @@ export default function App() {
   };
 
   // Don't render until storage has been read
-  if (loading) return null;
+  if (loading) {
+    return <SplashScreen onComplete={() => {}} />;
+  }
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout }}>
