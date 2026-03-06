@@ -11,6 +11,36 @@ const JWT_SECRET = process.env.JWT_SECRET || 'bulletauto-secret-key-2024-xK9mP';
 app.use(cors());
 app.use(express.json());
 
+// ─── SSE Live Updates ─────────────────────────────────────────────────────────
+
+const sseClients = new Set();
+
+function broadcastEvent(type, data) {
+  const payload = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of sseClients) {
+    try { res.write(payload); } catch { sseClients.delete(res); }
+  }
+}
+
+app.get('/api/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders();
+  res.write(': connected\n\n');
+  sseClients.add(res);
+  const keepAlive = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch { /* ignore */ }
+  }, 25000);
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    sseClients.delete(res);
+  });
+});
+
 // ─── Auth Middleware ─────────────────────────────────────────────────────────
 
 function authMiddleware(req, res, next) {
@@ -140,6 +170,7 @@ app.post('/api/bookings', authMiddleware, (req, res) => {
     updated_at: new Date().toISOString(),
   };
   db.get('bookings').push(booking).write();
+  broadcastEvent('booking_created', { id: booking.id });
   res.status(201).json(booking);
 });
 
@@ -162,6 +193,7 @@ app.patch('/api/bookings/:id', authMiddleware, adminOnly, (req, res) => {
   }
   const updated = db.get('bookings').find({ id: req.params.id }).value();
   const client = db.get('users').find({ id: updated.client_id }).value();
+  broadcastEvent('booking_updated', { id: updated.id, client_id: updated.client_id });
   res.json({ ...updated, client_name: client?.name || 'Unknown', client_email: client?.email || '', client_phone: client?.phone || '' });
 });
 
@@ -169,6 +201,7 @@ app.delete('/api/bookings/:id', authMiddleware, adminOnly, (req, res) => {
   if (!db.get('bookings').find({ id: req.params.id }).value()) return res.status(404).json({ error: 'Booking not found' });
   db.get('service_updates').remove({ booking_id: req.params.id }).write();
   db.get('bookings').remove({ id: req.params.id }).write();
+  broadcastEvent('booking_deleted', { id: req.params.id });
   res.json({ success: true });
 });
 
