@@ -163,6 +163,46 @@ router.patch('/:id', authMiddleware, adminOnly, (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── PATCH /api/bookings/:id/vehicle ─────────────────────────────────────────
+// Admin-only: update vehicle details on a booking after scanning a license disk.
+router.patch('/:id/vehicle', authMiddleware, adminOnly, [
+  body('car_make').optional().trim().notEmpty().withMessage('Car make cannot be empty'),
+  body('car_model').optional().trim().notEmpty().withMessage('Car model cannot be empty'),
+  body('car_year').optional().trim().notEmpty().withMessage('Car year cannot be empty'),
+  body('car_registration').optional().trim().notEmpty().withMessage('Car registration cannot be empty'),
+], (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+    const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const { car_make, car_model, car_year, car_registration } = req.body;
+    const fields = { updated_at: new Date().toISOString() };
+    if (car_make !== undefined)         fields.car_make         = car_make.trim();
+    if (car_model !== undefined)        fields.car_model        = car_model.trim();
+    if (car_year !== undefined)         fields.car_year         = String(car_year).trim();
+    if (car_registration !== undefined) fields.car_registration = car_registration.trim().toUpperCase();
+
+    if (Object.keys(fields).length === 1) {
+      return res.status(400).json({ error: 'No vehicle fields provided' });
+    }
+
+    const setClause = Object.keys(fields).map(k => `${k} = @${k}`).join(', ');
+    db.prepare(`UPDATE bookings SET ${setClause} WHERE id = @id`).run({ ...fields, id: req.params.id });
+
+    const updated = db.prepare(`
+      SELECT b.*, u.name AS client_name, u.email AS client_email, u.phone AS client_phone
+      FROM bookings b LEFT JOIN users u ON u.id = b.client_id
+      WHERE b.id = ?
+    `).get(req.params.id);
+
+    broadcast(req, 'booking_updated', { id: updated.id, client_id: updated.client_id });
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
 // ─── DELETE /api/bookings/:id ─────────────────────────────────────────────────
 router.delete('/:id', authMiddleware, adminOnly, (req, res, next) => {
   try {

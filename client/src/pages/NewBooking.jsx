@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api.js';
+import LicenseScannerModal from '../components/LicenseScannerModal.jsx';
 
 export default function NewBooking() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function NewBooking() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     apiFetch('/service-types').then(data => {
@@ -31,6 +33,17 @@ export default function NewBooking() {
     setForm(f => ({
       ...f,
       [name]: name === 'car_registration' ? value.toUpperCase() : value,
+    }));
+  }
+
+  // Auto-fill vehicle fields from a scanned license disk
+  function handleScan(data) {
+    setForm(f => ({
+      ...f,
+      car_make:         data.make         || f.car_make,
+      car_model:        data.model        || f.car_model,
+      car_year:         data.year         || f.car_year,
+      car_registration: data.registration ? data.registration.toUpperCase() : f.car_registration,
     }));
   }
 
@@ -94,6 +107,16 @@ export default function NewBooking() {
             Vehicle Details
           </div>
           <div className="divider" style={{ marginTop: 0 }} />
+
+          {/* Scan button — opens camera to auto-fill vehicle fields */}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center', marginBottom: 12, fontSize: 13, padding: '8px', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 8 }}
+            onClick={() => setShowScanner(true)}
+          >
+            📷 Scan License Disk
+          </button>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
@@ -202,6 +225,14 @@ export default function NewBooking() {
           </button>
         </form>
       </div>
+
+      {/* ── License disk scanner modal ── */}
+      {showScanner && (
+        <LicenseScannerModal
+          onScan={handleScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* ── Thank-you confirmation modal ── */}
       {confirmedId && (

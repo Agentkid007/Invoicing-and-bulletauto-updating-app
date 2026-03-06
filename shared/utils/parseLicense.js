@@ -11,8 +11,6 @@
  *  4. Plain registration number  "CA 123-456"
  */
 
-'use strict';
-
 /**
  * @param {string} raw  Raw string from barcode / QR detector
  * @returns {{
@@ -21,7 +19,7 @@
  *   owner_name: string, license_expiry: string, raw_data: string
  * }}
  */
-function parseLicenseDisk(raw) {
+export function parseLicenseDisk(raw) {
   const empty = {
     registration: '', vin_no: '', engine_no: '',
     make: '', model: '', colour: '', year: '',
@@ -100,5 +98,3 @@ function parseLicenseDisk(raw) {
 
   return result;
 }
-
-module.exports = { parseLicenseDisk };
