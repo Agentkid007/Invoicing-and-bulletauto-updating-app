@@ -43,6 +43,33 @@ cd Invoicing-and-bulletauto-updating-app
 
 ---
 
+## Updating to the latest version (already cloned the project?)
+
+If you cloned the project before and want the newest code, do this instead of Step 1:
+
+**1. Open a terminal inside the project folder and pull the latest changes:**
+```bash
+git pull origin main
+```
+
+> If you see a merge conflict, run `git status` to see which files are affected, then open each conflicted file and resolve the markers (`<<<<<<`, `======`, `>>>>>>`), or ask for help.
+
+**2. Check for new dependencies** (run this if `package.json` files were updated):
+```bash
+npm run install:all
+```
+
+This reinstalls packages for the root, backend, and client in one shot.
+
+**3. Restart the app:**
+```bash
+npm run dev:all
+```
+
+That's it — you're running the latest version. ✅
+
+---
+
 ## Step 2 — Install dependencies (do this once)
 
 Run these commands **one at a time**, in order:
@@ -152,14 +179,47 @@ npm start
 
 ---
 
+## Scripts Reference
+
+All scripts are run from the **root folder** of the project.
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Starts **backend + client web app** only (no Electron). Use this if you just want the web app in a browser. |
+| `npm run dev:all` | Starts **backend + client + Electron admin desktop app** simultaneously. Best for full development. |
+| `npm run start:all` | Same as `dev:all` but runs the backend in production mode (no auto-restart on file changes). |
+| `npm run start-backend` | Starts the backend API server only. |
+| `npm run dev-backend` | Starts the backend with **nodemon** (auto-restarts when you save a file). |
+| `npm run start-client` | Starts the React web app dev server only. |
+| `npm run build:client` | Builds the React web app for production (output goes to `client/dist/`). |
+| `npm run electron-build` | Builds a Windows `.exe` installer. Runs `build:client` first automatically. |
+| `npm run install:all` | Installs dependencies for root + backend + client in one command. Run this after a `git pull`. |
+
+> **Windows note:** All scripts use `npm --prefix <folder>` instead of `cd <folder> &&` so they work in both Command Prompt **and** PowerShell.
+
+---
+
 ## Generating an Invoice (Excel spreadsheet)
 
-1. Log in as **admin** in the web app
-2. Open any booking
-3. Click **Create Invoice**
-4. Fill in the customer and vehicle details
-5. Add line items (Labour, Parts, etc.)
-6. Click **Download Excel** — an `.xlsx` file will be saved to your computer
+Invoices are managed inside the **Desktop Admin App** (Electron window).
+
+**Option A — From a service job (fastest):**
+
+1. Open the **Desktop Admin App** and log in as admin
+2. Go to **Service Jobs**
+3. Find the job and click the **invoice icon** (📄) in the Actions column
+4. The form pre-fills with the customer's name, phone, email, and vehicle details
+5. Add line items (Labour, Parts, etc.) — totals calculate automatically
+6. Click **Save Invoice**, then **Download Excel**
+
+**Option B — From the Invoices section:**
+
+1. Open the **Desktop Admin App** and log in as admin
+2. Click **Invoices** in the left sidebar
+3. Click **New Invoice** and fill in all fields
+4. Add line items — VAT (15%) is calculated automatically
+5. Click **Save Invoice**
+6. Click **Download Excel** — an `.xlsx` file is saved to your computer
 
 The spreadsheet matches the official **Bullet Auto Performance Cost Estimate** template with:
 - Company logo area and address
