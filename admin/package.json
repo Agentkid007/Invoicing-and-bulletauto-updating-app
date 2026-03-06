@@ -8,6 +8,10 @@
     "dev": "electron . --dev"
   },
   "dependencies": {
-    "electron": "^28.2.0"
+    "electron": "^28.2.0",
+    "electron-updater": "^6.8.3"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.8.1"
   }
 }
