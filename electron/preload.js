@@ -22,3 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 });
+
+// Expose splash-done signaller for splash.html
+contextBridge.exposeInMainWorld('electronSplash', {
+  done: () => ipcRenderer.send('splash:done'),
+});

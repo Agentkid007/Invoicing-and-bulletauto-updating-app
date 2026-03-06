@@ -31,9 +31,41 @@ const CLIENT_DIST  = path.join(__dirname, '..', 'client', 'dist', 'index.html');
 autoUpdater.autoDownload       = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
-let mainWindow = null;
+let mainWindow  = null;
+let splashWindow = null;
 
-// ─── Window creation ──────────────────────────────────────────────────────────
+// ─── Splash screen ────────────────────────────────────────────────────────────
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width:           440,
+    height:          380,
+    frame:           false,
+    transparent:     true,
+    resizable:       false,
+    alwaysOnTop:     true,
+    skipTaskbar:     true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      nodeIntegration:  false,
+      contextIsolation: true,
+      preload:          path.join(__dirname, 'preload.js'),
+    },
+  });
+
+  splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+  splashWindow.center();
+  splashWindow.show();
+
+  splashWindow.on('closed', () => { splashWindow = null; });
+}
+
+function closeSplash() {
+  if (splashWindow && !splashWindow.isDestroyed()) {
+    splashWindow.close();
+  }
+}
+
+// ─── Main window creation ─────────────────────────────────────────────────────
 function createWindow() {
   mainWindow = new BrowserWindow({
     width:           1280,
@@ -54,17 +86,44 @@ function createWindow() {
   // Load the frontend
   if (isDev) {
     mainWindow.loadURL(CLIENT_URL);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(CLIENT_DIST);
   }
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    // Check for updates after window is shown (production only)
-    if (!isDev) {
-      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  // Show main window once the splash animation has finished (≥ 3.55 s) AND
+  // the renderer is ready — whichever comes last.
+  let splashDone    = false;
+  let rendererReady = false;
+
+  function maybeShowMain() {
+    if (splashDone && rendererReady) {
+      closeSplash();
+      mainWindow.show();
+      if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
+      if (!isDev) autoUpdater.checkForUpdatesAndNotify().catch(() => {});
     }
+  }
+
+  // Splash signals completion via IPC
+  ipcMain.once('splash:done', () => {
+    splashDone = true;
+    maybeShowMain();
+  });
+
+  // Safety fallback: show main window after 4 s even if IPC never fires
+  const splashTimeout = setTimeout(() => {
+    splashDone = true;
+    maybeShowMain();
+  }, 4000);
+
+  mainWindow.once('ready-to-show', () => {
+    rendererReady = true;
+    maybeShowMain();
+  });
+
+  mainWindow.on('closed', () => {
+    clearTimeout(splashTimeout);
+    mainWindow = null;
   });
 
   // Open external links in the default browser, not Electron
@@ -72,8 +131,6 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
-
-  mainWindow.on('closed', () => { mainWindow = null; });
 }
 
 // ─── Application menu ─────────────────────────────────────────────────────────
@@ -124,7 +181,8 @@ function buildMenu() {
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   buildMenu();
-  createWindow();
+  createSplashWindow();  // show splash first
+  createWindow();        // load main app in background
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
