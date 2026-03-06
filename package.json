@@ -6,14 +6,23 @@
   "main": "electron/main.js",
   "private": true,
   "scripts": {
-    "start-backend": "cd backend && node server.js",
-    "start-client": "cd client && npm run dev",
-    "start-electron": "wait-on http://localhost:3000 http://localhost:4000 && electron .",
+    "_comment_individual": "── Individual service launchers ──────────────────────────────────────────",
+    "start-backend": "npm --prefix backend start",
+    "dev-backend":   "npm --prefix backend run dev",
+    "start-client":  "npm --prefix client run dev",
+    "start-electron":"wait-on http://localhost:3000 http://localhost:4000 && electron .",
+
+    "_comment_combined": "── Combined launchers (use these day-to-day) ─────────────────────────────",
+    "dev": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,CLIENT\" \"npm run dev-backend\" \"npm run start-client\"",
+    "dev:all": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" --names \"BACKEND,CLIENT,ELECTRON\" \"npm run dev-backend\" \"npm run start-client\" \"npm run start-electron\"",
     "start:all": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" --names \"BACKEND,CLIENT,ELECTRON\" \"npm run start-backend\" \"npm run start-client\" \"npm run start-electron\"",
-    "dev:all": "concurrently --kill-others-on-fail --prefix-colors \"bgBlue.bold,bgGreen.bold,bgMagenta.bold\" --names \"BACKEND,CLIENT,ELECTRON\" \"cd backend && nodemon server.js\" \"npm run start-client\" \"npm run start-electron\"",
-    "build:client": "cd client && npm run build",
+
+    "_comment_build": "── Build & packaging ─────────────────────────────────────────────────────",
+    "build:client":   "npm --prefix client run build",
     "electron-build": "npm run build:client && electron-builder --win --x64",
-    "install:all": "npm install && cd backend && npm install && cd ../client && npm install && cd ../electron && npm install"
+
+    "_comment_install": "── One-shot dependency install for all sub-packages (electron/ has no package.json so is excluded) ──",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix client install"
   },
   "dependencies": {
     "electron-updater": "^6.3.9"
