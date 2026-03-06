@@ -6,6 +6,8 @@
 <title>BulletAuto Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<!-- jsQR — pure-JS QR/barcode decoder used by the license disk scanner -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /* ── BulletAuto Design Tokens ────────────────────────────────────────────── */
 :root{
@@ -284,6 +286,41 @@ code.regplate{
   background:#e8ebff;border:1px solid #c0c8f0;border-radius:20px;
   padding:3px 9px;font-size:11px;color:var(--primary);margin:2px;
 }
+/* ── License Disk Scanner overlay ────────────────────────────────────────── */
+#scan-ovl{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+#scan-inner{background:#111;border-radius:18px;width:min(94vw,440px);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.9),0 0 0 1px rgba(63,81,181,.3)}
+#scan-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#0d0d0d 0%,#1a237e 100%);border-bottom:1px solid rgba(63,81,181,.4);flex-shrink:0}
+#scan-hdr-title{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;color:#fff}
+#scan-close-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:2px 10px;border-radius:6px;line-height:24px}
+#scan-cam-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#000;flex-shrink:0;overflow:hidden}
+#scan-video{width:100%;height:100%;object-fit:cover;display:block}
+#scan-canvas{display:none}
+#scan-dim{position:absolute;inset:0;background:radial-gradient(ellipse 65% 65% at 50% 50%,transparent 38%,rgba(0,0,0,.6) 100%);pointer-events:none}
+#scan-frame-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#scan-frame{position:relative;width:64%;aspect-ratio:1}
+.sc-corner{position:absolute;width:26px;height:26px;border:3px solid #5c6bc0}
+.sc-tl{top:0;left:0;border-right:none;border-bottom:none}
+.sc-tr{top:0;right:0;border-left:none;border-bottom:none}
+.sc-bl{bottom:0;left:0;border-right:none;border-top:none}
+.sc-br{bottom:0;right:0;border-left:none;border-top:none}
+@keyframes baAdminScanLine{0%,100%{top:5px}50%{top:calc(100% - 8px)}}
+#scan-line{position:absolute;left:6px;right:6px;height:3px;background:linear-gradient(90deg,transparent,#5c6bc0,#9575cd,#5c6bc0,transparent);border-radius:2px;animation:baAdminScanLine 2s linear infinite;box-shadow:0 0 14px #5c6bc0;pointer-events:none}
+#scan-instruct{padding:14px 20px 6px;text-align:center;font-size:13px;color:rgba(255,255,255,.55);line-height:1.6;flex-shrink:0}
+#scan-cancel-btn{margin:12px 20px 18px;padding:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:rgba(255,255,255,.8);font-size:14px;cursor:pointer;letter-spacing:.4px}
+#scan-result-wrap{padding:16px 20px;overflow-y:auto}
+.scan-raw-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 14px;margin-bottom:14px}
+.scan-raw-lbl{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.scan-raw-txt{font-size:11px;color:rgba(255,255,255,.45);font-family:monospace;word-break:break-all;line-height:1.5}
+.scan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-bottom:18px}
+.scan-field{background:rgba(63,81,181,.13);border:1px solid rgba(63,81,181,.28);border-radius:9px;padding:9px 12px}
+.scan-field-lbl{font-size:10px;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
+.scan-field-val{font-size:13px;color:#fff;font-weight:600}
+.scan-act-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.scan-rescan-btn{padding:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:14px;cursor:pointer}
+.scan-use-btn{padding:13px;background:linear-gradient(135deg,#3949ab,#7b1fa2);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px}
+#scan-err-wrap{display:flex;flex-direction:column;align-items:center;padding:32px 24px;gap:14px}
+#scan-err-txt{text-align:center;color:rgba(255,255,255,.65);font-size:14px;line-height:1.7}
+.scan-retry-btn{padding:12px 28px;background:#3949ab;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 </style>
 </head>
 <body>
@@ -434,7 +471,12 @@ code.regplate{
   <div class="modal">
     <div class="modal-hdr">
       <h2><i class="fa fa-tools" style="margin-right:8px"></i>Update Service Job</h2>
-      <button class="btn btn-outline btn-xs" onclick="closeModal()"><i class="fa fa-times"></i></button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-outline btn-xs" onclick="startAdminScanner()" title="Scan license disk to update vehicle details">
+          <i class="fa fa-camera"></i> Scan Disk
+        </button>
+        <button class="btn btn-outline btn-xs" onclick="closeModal()"><i class="fa fa-times"></i></button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="info-grid" id="modal-info"></div>
@@ -501,6 +543,54 @@ code.regplate{
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveUpdate()"><i class="fa fa-save"></i> Save Update</button>
     </div>
+  </div>
+</div>
+
+<!-- ── License Disk Scanner Overlay ─────────────────────────────────────────── -->
+<!-- Shown when admin clicks "Scan Disk" in the Update Service Job modal.       -->
+<!-- Uses jsQR + BarcodeDetector API to decode QR codes and 1D/2D barcodes.    -->
+<div id="scan-ovl" style="display:none" onclick="if(event.target===this)stopAdminScanner()">
+  <div id="scan-inner">
+
+    <!-- Header -->
+    <div id="scan-hdr">
+      <span id="scan-hdr-title">📷 SCAN LICENSE DISK</span>
+      <button id="scan-close-btn" onclick="stopAdminScanner()">✕</button>
+    </div>
+
+    <!-- Camera viewport (visible while scanning) -->
+    <div id="scan-cam-wrap" style="display:none">
+      <video id="scan-video" muted playsinline autoplay></video>
+      <canvas id="scan-canvas"></canvas>
+      <!-- Radial dim to focus on centre -->
+      <div id="scan-dim"></div>
+      <!-- Scan-zone brackets + sweep line -->
+      <div id="scan-frame-wrap">
+        <div id="scan-frame">
+          <div class="sc-corner sc-tl"></div>
+          <div class="sc-corner sc-tr"></div>
+          <div class="sc-corner sc-bl"></div>
+          <div class="sc-corner sc-br"></div>
+          <div id="scan-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instruction text (scanning phase) -->
+    <div id="scan-instruct" style="display:none"></div>
+    <button id="scan-cancel-btn" style="display:none" onclick="stopAdminScanner()">Cancel</button>
+
+    <!-- Result pane (shown after successful detection) -->
+    <div id="scan-result-wrap" style="display:none"></div>
+
+    <!-- Error pane -->
+    <div id="scan-err-wrap" style="display:none">
+      <div style="font-size:52px">📷</div>
+      <div id="scan-err-txt"></div>
+      <button class="scan-retry-btn" onclick="initAdminCamera()">🔄 Try Again</button>
+      <button id="scan-cancel-btn2" style="margin:0;padding:13px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:rgba(255,255,255,.8);font-size:14px;cursor:pointer" onclick="stopAdminScanner()">Close</button>
+    </div>
+
   </div>
 </div>
 
@@ -816,6 +906,196 @@ function toast(msg,type='info'){
   const t=document.createElement('div');
   t.className=`toast toast-${type}`;t.innerHTML=`<i class="fa ${type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle'}" style="margin-right:7px"></i>${msg}`;
   c.appendChild(t);setTimeout(()=>{t.style.transition='opacity 0.3s';t.style.opacity=0;setTimeout(()=>t.remove(),300)},3500);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  LICENSE DISK SCANNER — Vanilla JS implementation for the admin dashboard
+ *  Detection pipeline:
+ *    1. jsQR       – pure-JS QR decoder, works in all browsers
+ *    2. BarcodeDetector API (Chrome/Edge ≥ 88) – native, handles PDF417 / Code-128 etc.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+// ── parseLicenseDisk ──────────────────────────────────────────────────────────
+// Inline port of shared/utils/parseLicense.js so the admin (plain HTML) can
+// decode eNaTIS pipe-delimited, JSON, key-value, and plain registration strings.
+function parseLicenseDisk(raw){
+  const empty={registration:'',vin_no:'',engine_no:'',make:'',model:'',colour:'',year:'',owner_name:'',license_expiry:'',raw_data:raw||''};
+  if(!raw||!raw.trim())return empty;
+  const text=raw.trim();
+  // 1. eNaTIS pipe-delimited: |1|CA123456|VIN|ENGINE|MAKE|MODEL|COLOUR|YEAR|EXPIRY|OWNER|
+  if(text.includes('|')){
+    const parts=text.split('|').map(p=>p.trim()).filter(Boolean);
+    let i=/^\d{1,2}$/.test(parts[0])?1:0;
+    const get=o=>parts[i+o]||'';
+    return{...empty,registration:get(0),vin_no:get(1),engine_no:get(2),make:get(3),model:get(4),colour:get(5),year:get(6),license_expiry:get(7),owner_name:get(8)};
+  }
+  // 2. JSON
+  try{
+    const j=JSON.parse(text);
+    return{...empty,registration:j.registration||j.reg_no||j.regNo||'',vin_no:j.vin||j.vin_no||j.vinNo||'',engine_no:j.engine||j.engine_no||j.engineNo||'',make:j.make||'',model:j.model||'',colour:j.colour||j.color||'',year:String(j.year||j.model_year||''),owner_name:j.owner||j.owner_name||j.name||'',license_expiry:j.expiry||j.license_expiry||''};
+  }catch{}
+  // 3. Key-value pairs
+  const ex=(...ps)=>{for(const p of ps){const m=text.match(p);if(m?.[1])return m[1].trim();}return'';};
+  const result={...empty,
+    registration:ex(/reg(?:istration)?[\s:=]+([A-Z0-9 /-]{3,15})/i),
+    vin_no:ex(/\bvin[\s:=]+([A-Z0-9]{10,20})/i),
+    engine_no:ex(/engine[\s:=]+([A-Z0-9]{5,20})/i),
+    make:ex(/\bmake[\s:=]+([A-Za-z ]{2,20})/i),
+    model:ex(/\bmodel[\s:=]+([A-Za-z0-9 ]{2,25})/i),
+    colour:ex(/colou?r[\s:=]+([A-Za-z ]{2,15})/i),
+    year:ex(/\byear[\s:=]+(\d{4})/i,/(?<!\d)(\d{4})(?!\d)/),
+    owner_name:ex(/owner[\s:=]+([A-Za-z ,]{2,40})/i,/\bname[\s:=]+([A-Za-z ,]{2,40})/i),
+    license_expiry:ex(/expir(?:y|e|es)[\s:=]+([\d/.\-]+)/i,/valid[\s:=]+([\d/.\-]+)/i),
+  };
+  // 4. Plain registration fallback
+  if(!result.registration){const m=text.match(/^([A-Z]{1,3}\s?\d{2,6}\s?[A-Z0-9]{0,3})$/i);if(m)result.registration=m[1].toUpperCase().trim();}
+  return result;
+}
+
+// ── Scanner state ─────────────────────────────────────────────────────────────
+let _scanStream=null, _scanRaf=null, _scanDetecting=false, _scanResult=null;
+
+function _scanEl(id){return document.getElementById(id);}
+
+// Show / hide different panes inside the overlay
+function _scanPhase(phase){
+  _scanEl('scan-cam-wrap').style.display  = (phase==='scanning'||phase==='init') ? 'block' : 'none';
+  _scanEl('scan-instruct').style.display  = (phase==='scanning'||phase==='init') ? 'block' : 'none';
+  _scanEl('scan-cancel-btn').style.display= (phase==='scanning'||phase==='init') ? 'block' : 'none';
+  _scanEl('scan-result-wrap').style.display= phase==='result' ? 'block' : 'none';
+  _scanEl('scan-err-wrap').style.display  = phase==='error'   ? 'block' : 'none';
+  _scanEl('scan-hdr-title').textContent   = phase==='result'  ? '✅ SCAN SUCCESSFUL' : '📷 SCAN LICENSE DISK';
+  if(phase==='init')   _scanEl('scan-instruct').innerHTML='🔄 Initialising camera…';
+  if(phase==='scanning')_scanEl('scan-instruct').innerHTML='Hold the <strong style="color:#7986cb">barcode or QR code</strong> steady inside the brackets';
+}
+
+// Stop camera stream and cancel animation frame
+function _scanStop(){
+  if(_scanRaf){cancelAnimationFrame(_scanRaf);_scanRaf=null;}
+  if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null;}
+}
+
+// Called when a barcode / QR raw string is detected
+function _scanHandleDetected(rawText){
+  _scanStop();
+  if(navigator.vibrate)navigator.vibrate(150);
+  _scanResult=parseLicenseDisk(rawText);
+  _scanPhase('result');
+  // Render result cards
+  const fields=[
+    ['Registration', _scanResult.registration],
+    ['Make',         _scanResult.make],
+    ['Model',        _scanResult.model],
+    ['Year',         _scanResult.year],
+    ['VIN',          _scanResult.vin_no],
+    ['Engine No.',   _scanResult.engine_no],
+    ['Colour',       _scanResult.colour],
+    ['Owner',        _scanResult.owner_name],
+    ['Expiry',       _scanResult.license_expiry],
+  ].filter(([,v])=>v);
+  _scanEl('scan-result-wrap').innerHTML=`
+    <div class="scan-raw-box">
+      <div class="scan-raw-lbl">Raw scan data</div>
+      <div class="scan-raw-txt">${esc(_scanResult.raw_data)}</div>
+    </div>
+    <div class="scan-grid">${fields.map(([l,v])=>`
+      <div class="scan-field"><div class="scan-field-lbl">${esc(l)}</div><div class="scan-field-val">${esc(v)}</div></div>`).join('')}
+    </div>
+    <div class="scan-act-row">
+      <button class="scan-rescan-btn" onclick="_scanRescan()">🔄 Scan Again</button>
+      <button class="scan-use-btn"    onclick="_scanUseData()">✓ Use This Data</button>
+    </div>`;
+}
+
+// Per-frame tick: draw video to canvas, run jsQR, then BarcodeDetector if available
+function _scanTick(){
+  const vid=_scanEl('scan-video');
+  const cvs=_scanEl('scan-canvas');
+  if(!vid||!cvs||vid.readyState<2){_scanRaf=requestAnimationFrame(_scanTick);return;}
+  cvs.width=vid.videoWidth;
+  cvs.height=vid.videoHeight;
+  const ctx=cvs.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(vid,0,0);
+  const img=ctx.getImageData(0,0,cvs.width,cvs.height);
+  // Step 1: jsQR
+  if(typeof jsQR==='function'){
+    const qr=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+    if(qr?.data){_scanHandleDetected(qr.data);return;}
+  }
+  // Step 2: native BarcodeDetector API (Chrome/Edge)
+  if('BarcodeDetector' in window&&!_scanDetecting){
+    _scanDetecting=true;
+    new BarcodeDetector({formats:['qr_code','pdf417','code_128','code_39','aztec','data_matrix']})
+      .detect(vid)
+      .then(codes=>{
+        if(codes.length&&codes[0].rawValue){_scanHandleDetected(codes[0].rawValue);}
+        else{_scanRaf=requestAnimationFrame(_scanTick);}
+      })
+      .catch(err=>{console.debug('[BarcodeDetector]',err);_scanRaf=requestAnimationFrame(_scanTick);})
+      .finally(()=>{_scanDetecting=false;});
+  } else {
+    _scanRaf=requestAnimationFrame(_scanTick);
+  }
+}
+
+// Request camera and start the scan loop
+async function initAdminCamera(){
+  _scanPhase('init');
+  _scanResult=null;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
+    });
+    _scanStream=stream;
+    const vid=_scanEl('scan-video');
+    vid.srcObject=stream;
+    await vid.play();
+    _scanPhase('scanning');
+    _scanRaf=requestAnimationFrame(_scanTick);
+  }catch(err){
+    _scanPhase('error');
+    _scanEl('scan-err-txt').textContent=
+      err.name==='NotAllowedError'  ? 'Camera permission denied. Please allow camera access in your browser settings and try again.'
+      :err.name==='NotFoundError'   ? 'No camera was found on this device.'
+      :`Camera error: ${err.message}`;
+  }
+}
+
+// Open the scanner overlay
+function startAdminScanner(){
+  if(!curId){toast('Please open a service job from the list before scanning a license disk','error');return;}
+  _scanEl('scan-ovl').style.display='flex';
+  initAdminCamera();
+}
+
+// Close the scanner overlay
+function stopAdminScanner(){
+  _scanStop();
+  _scanEl('scan-ovl').style.display='none';
+  _scanResult=null;
+}
+
+// Rescan — restart camera
+function _scanRescan(){_scanResult=null;initAdminCamera();}
+
+// Confirm scan result: PATCH booking vehicle data, then close overlay and refresh
+async function _scanUseData(){
+  if(!_scanResult||!curId)return;
+  const payload={};
+  if(_scanResult.make)         payload.car_make        =_scanResult.make;
+  if(_scanResult.model)        payload.car_model       =_scanResult.model;
+  if(_scanResult.year)         payload.car_year        =_scanResult.year;
+  if(_scanResult.registration) payload.car_registration=_scanResult.registration;
+  if(Object.keys(payload).length===0){toast('No vehicle fields found in scan','error');return;}
+  try{
+    const r=await req('PATCH','/bookings/'+curId+'/vehicle',payload);
+    if(r.error){toast(r.error,'error');return;}
+    stopAdminScanner();
+    toast('Vehicle details updated from scan ✅','success');
+    // Refresh the open modal info to show new values
+    await openUpd(curId);
+    refreshAll();
+  }catch{toast('Failed to save scanned data — check server connection','error');}
 }
 </script>
 </body>
