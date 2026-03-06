@@ -34,6 +34,8 @@ export default function NewBooking() {
     }));
   }
 
+  const [confirmedId, setConfirmedId] = useState(null);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -55,7 +57,7 @@ export default function NewBooking() {
         body: JSON.stringify(payload),
       });
       if (data.id) {
-        navigate(`/bookings/${data.id}`);
+        setConfirmedId(data.id);
       } else {
         setError(data.message || data.error || 'Could not create booking.');
       }
@@ -200,6 +202,27 @@ export default function NewBooking() {
           </button>
         </form>
       </div>
+
+      {/* ── Thank-you confirmation modal ── */}
+      {confirmedId && (
+        <div className="thankyou-overlay">
+          <div className="thankyou-modal">
+            <div className="thankyou-icon">🎉</div>
+            <h2 className="thankyou-title">Booking Received!</h2>
+            <p className="thankyou-body">
+              Thank you for booking with us.<br />
+              We will get back to you shortly to confirm your appointment.
+            </p>
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
+              onClick={() => navigate(`/bookings/${confirmedId}`)}
+            >
+              View My Booking
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

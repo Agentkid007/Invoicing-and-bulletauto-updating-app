@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch, clearToken, getToken } from '../api.js';
+import useBookingEvents from '../useBookingEvents.js';
 
 const STATUS_LABEL = {
   pending: 'Pending',
@@ -69,6 +70,13 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Live updates via SSE
+  useBookingEvents(useCallback((type) => {
+    if (['booking_created', 'booking_updated', 'booking_deleted'].includes(type)) {
+      fetchData();
+    }
+  }, [fetchData]));
 
   function handleLogout() {
     clearToken();

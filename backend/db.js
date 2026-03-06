@@ -30,6 +30,7 @@ db.defaults({
   users: [],
   bookings: [],
   service_updates: [],
+  notes: [],
 }).write();
 
 // Seed admin account if not exists
