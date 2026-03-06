@@ -20,9 +20,16 @@
     "_comment_build": "── Build & packaging ─────────────────────────────────────────────────────",
     "build:client":   "npm --prefix client run build",
     "electron-build": "npm run build:client && electron-builder --win --x64",
+    "desktop:dev":    "npm run dev:all",
+    "desktop:build":  "npm run electron-build",
 
-    "_comment_install": "── One-shot dependency install for all sub-packages (electron/ has no package.json so is excluded) ──",
-    "install:all": "npm install && npm --prefix backend install && npm --prefix client install"
+    "_comment_mobile": "── Mobile (Expo / React Native) ──────────────────────────────────────────",
+    "mobile:start":   "npm --prefix mobile start",
+    "android":        "npm --prefix mobile run android",
+    "ios":            "npm --prefix mobile run ios",
+
+    "_comment_install": "── One-shot dependency install for all sub-packages ──────────────────────",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix client install && npm --prefix mobile install"
   },
   "dependencies": {
     "electron-updater": "^6.3.9"
