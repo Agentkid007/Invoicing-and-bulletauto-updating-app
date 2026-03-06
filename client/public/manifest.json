@@ -1,0 +1,10 @@
+{
+  "name": "BulletAuto",
+  "short_name": "BulletAuto",
+  "description": "BulletAuto Service Tracking",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#1a237e",
+  "icons": []
+}
