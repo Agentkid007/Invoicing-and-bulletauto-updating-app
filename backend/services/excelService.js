@@ -38,8 +38,8 @@ const C = {
 function fill(cell, color) {
   cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + color } };
 }
-function font(cell, { name = 'Calibri', size = 9, bold = false, color = C.black, italic = false } = {}) {
-  cell.font = { name, size, bold, italic, color: { argb: 'FF' + color } };
+function font(cell, { name = 'Calibri', size = 9, bold = false, color = C.black, italic = false, underline = false } = {}) {
+  cell.font = { name, size, bold, italic, underline, color: { argb: 'FF' + color } };
 }
 function align(cell, h = 'left', v = 'middle', wrap = false) {
   cell.alignment = { horizontal: h, vertical: v, wrapText: wrap };
@@ -126,45 +126,31 @@ async function generateInvoiceExcel(invoice) {
   font(nameCell, { name: 'Times New Roman', size: 15, bold: true });
   align(nameCell, 'center', 'middle', true);
 
-  // Right: address lines A2:J4 right side
-  const addrLines = [
+  // Right: entire address block merged as one cell (rows 2-7, cols 6-10)
+  // Using a single wrapped cell avoids merge conflicts with DATE/QUOTE on row 8+
+  M(r, 6, r+5, 10);
+  const addrCell = C_(r, 6);
+  addrCell.value = [
     '7 Strand Road',
     'Labiance Bellville',
-    'Cape Town',
-    'Western Cape',
-    '7530',
+    'Cape Town, Western Cape, 7530',
     'Tel: 072 345 3221',
     'Email: admin@bulletauto.co.za',
-    'Vat No: 4350295624',
-    'Reg No: 2019/423180/07',
-  ];
-  // Rows 2–6 on right (cols 6-10): each row one line
-  for (let i = 0; i < Math.min(addrLines.length, 3); i++) {
-    M(r + i, 6, r + i, 10);
-    const ac = C_(r + i, 6);
-    ac.value = addrLines[i];
-    font(ac, { size: 8 });
-    align(ac, 'left', 'middle');
-  }
+    'Vat No: 4350295624   |   Reg No: 2019/423180/07',
+  ].join('\n');
+  font(addrCell, { size: 8 });
+  align(addrCell, 'left', 'top', true);
+
   r += 3; // now at row 5
 
-  // ─── ROWS 5–7: Associations + more address ────────────────────────────────
+  // ─── ROWS 5–7: Associations (left side only — right is still part of address block) ──
   R(r).height = 18; R(r+1).height = 14; R(r+2).height = 14;
-  // Associations label (RMI | miwa | MIO) left side
   M(r, 1, r, 4);
   const assocCell = C_(r, 1);
   assocCell.value = '[ RMI ]   [ miwa ]   [ MIO ]';
   font(assocCell, { size: 10, bold: true });
   align(assocCell, 'center', 'middle');
 
-  // Remaining address lines on right
-  for (let i = 3; i < Math.min(addrLines.length, 7); i++) {
-    M(r + (i - 3), 6, r + (i - 3), 10);
-    const ac = C_(r + (i - 3), 6);
-    ac.value = addrLines[i];
-    font(ac, { size: 8 });
-    align(ac, 'left', 'middle');
-  }
   r += 3; // now at row 8
 
   // ─── ROWS 8–10: DATE / QUOTE NO / IN / OUT ────────────────────────────────

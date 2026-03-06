@@ -2,8 +2,10 @@
 const express = require('express');
 const { db } = require('../models/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { apiLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
+router.use(apiLimiter);
 
 // GET /api/clients  (admin only)
 router.get('/', authMiddleware, adminOnly, (req, res, next) => {

@@ -8,8 +8,10 @@ const { body, validationResult } = require('express-validator');
 const { db, uuidv4 } = require('../models/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { generateInvoiceExcel } = require('../services/excelService');
+const { apiLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
+router.use(apiLimiter);
 
 // ─── Helper: build full invoice object from DB ────────────────────────────────
 function buildInvoice(row) {
@@ -114,7 +116,7 @@ router.post('/', authMiddleware, adminOnly, [
     const items = Array.isArray(b.items) ? b.items : [];
     const subtotal = items.reduce((s, it) => s + (Number(it.nett_price) || Number(it.qty || 1) * Number(it.unit_price || 0)), 0);
     const vat_rate = Number(b.vat_rate ?? 15);
-    const vat_amount = Math.round(subtotal * vat_rate) / 100;
+    const vat_amount = Math.round(subtotal * vat_rate / 100 * 100) / 100;
     const total = subtotal + vat_amount;
 
     const id = uuidv4();
@@ -219,7 +221,7 @@ router.patch('/:id', authMiddleware, adminOnly, (req, res, next) => {
     if (Array.isArray(b.items)) {
       subtotal   = b.items.reduce((s, it) => s + (Number(it.nett_price) || Number(it.qty || 1) * Number(it.unit_price || 0)), 0);
       vat_rate   = Number(b.vat_rate ?? existing.vat_rate ?? 15);
-      vat_amount = Math.round(subtotal * vat_rate) / 100;
+      vat_amount = Math.round(subtotal * vat_rate / 100 * 100) / 100;
       total      = subtotal + vat_amount;
     }
 

@@ -6,8 +6,10 @@ const fs      = require('fs');
 const { body, validationResult } = require('express-validator');
 const { db, uuidv4 } = require('../models/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { apiLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
+router.use(apiLimiter);
 
 // ─── File upload setup ────────────────────────────────────────────────────────
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');

@@ -5,8 +5,10 @@ const jwt     = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { db, uuidv4 } = require('../models/db');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
+router.use(authLimiter);
 
 // POST /api/auth/register
 router.post('/register', [

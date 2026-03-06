@@ -39,6 +39,9 @@ const apiLimiter  = rateLimit({ windowMs: 60 * 1000,       max: 120, standardHea
 app.use('/api/auth',     authLimiter);
 app.use('/api/events',   apiLimiter);
 app.use('/api/invoices', apiLimiter);
+app.use('/api/bookings', apiLimiter);
+app.use('/api/clients',  apiLimiter);
+app.use('/api/stats',    apiLimiter);
 
 // ─── SSE live-update broadcast ────────────────────────────────────────────────
 const sseClients = new Set();
