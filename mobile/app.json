@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "BulletAuto",
+    "slug": "bulletauto",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.bulletauto.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0A"
+      },
+      "package": "co.bulletauto.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
