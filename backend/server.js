@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const rateLimit = require('express-rate-limit');
+const path = require('path');
+const fs = require('fs');
 const { db, uuidv4, SERVICE_TYPES } = require('./db');
 
 const app = express();
@@ -10,6 +14,86 @@ const JWT_SECRET = process.env.JWT_SECRET || 'bulletauto-secret-key-2024-xK9mP';
 
 app.use(cors());
 app.use(express.json());
+
+// ─── File Upload (multer) ─────────────────────────────────────────────────────
+
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${uuidv4()}${ext}`);
+  },
+});
+
+const ALLOWED_MIME = /^(image\/(jpeg|png|gif|webp)|video\/(mp4|quicktime|webm))$/;
+
+function fileFilter(_req, file, cb) {
+  if (ALLOWED_MIME.test(file.mimetype)) cb(null, true);
+  else cb(new Error('Only images (jpg/png/gif/webp) and videos (mp4/mov/webm) are allowed'));
+}
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+});
+
+// Serve uploaded files as static assets
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
+const apiLimiter  = rateLimit({ windowMs: 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false });
+const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
+
+app.use('/api/auth', authLimiter);
+app.use('/api/events', apiLimiter);
+
+// ─── SSE Live Updates ─────────────────────────────────────────────────────────
+
+const sseClients = new Set();
+
+function broadcastEvent(type, data) {
+  const payload = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of sseClients) {
+    try { res.write(payload); } catch { sseClients.delete(res); }
+  }
+}
+
+app.get('/api/events', (req, res) => {
+  // Optional token auth via query param (EventSource can't set headers)
+  const tokenParam = req.query.token;
+  if (tokenParam) {
+    try { jwt.verify(tokenParam, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  }
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders();
+  res.write(': connected\n\n');
+  sseClients.add(res);
+  const keepAlive = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(keepAlive);
+      sseClients.delete(res);
+    }
+  }, 25000);
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    sseClients.delete(res);
+  });
+});
 
 // ─── Auth Middleware ─────────────────────────────────────────────────────────
 
@@ -140,6 +224,7 @@ app.post('/api/bookings', authMiddleware, (req, res) => {
     updated_at: new Date().toISOString(),
   };
   db.get('bookings').push(booking).write();
+  broadcastEvent('booking_created', { id: booking.id });
   res.status(201).json(booking);
 });
 
@@ -162,6 +247,7 @@ app.patch('/api/bookings/:id', authMiddleware, adminOnly, (req, res) => {
   }
   const updated = db.get('bookings').find({ id: req.params.id }).value();
   const client = db.get('users').find({ id: updated.client_id }).value();
+  broadcastEvent('booking_updated', { id: updated.id, client_id: updated.client_id });
   res.json({ ...updated, client_name: client?.name || 'Unknown', client_email: client?.email || '', client_phone: client?.phone || '' });
 });
 
@@ -169,6 +255,7 @@ app.delete('/api/bookings/:id', authMiddleware, adminOnly, (req, res) => {
   if (!db.get('bookings').find({ id: req.params.id }).value()) return res.status(404).json({ error: 'Booking not found' });
   db.get('service_updates').remove({ booking_id: req.params.id }).write();
   db.get('bookings').remove({ id: req.params.id }).write();
+  broadcastEvent('booking_deleted', { id: req.params.id });
   res.json({ success: true });
 });
 
@@ -194,6 +281,57 @@ app.get('/api/stats', authMiddleware, adminOnly, (req, res) => {
     cancelled: bookings.filter(b => b.status === 'cancelled').length,
     clients: db.get('users').filter({ role: 'client' }).value().length,
   });
+});
+
+// ─── Notes (mechanic ↔ client messaging + media) ─────────────────────────────
+
+app.get('/api/bookings/:id/notes', apiLimiter, authMiddleware, (req, res) => {
+  const booking = db.get('bookings').find({ id: req.params.id }).value();
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  if (req.user.role !== 'admin' && booking.client_id !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const notes = db.get('notes')
+    .filter({ booking_id: req.params.id })
+    .value()
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  res.json(notes);
+});
+
+app.post('/api/bookings/:id/notes', uploadLimiter, authMiddleware, (req, res, next) => {
+  upload.array('media', 10)(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, (req, res) => {
+  const booking = db.get('bookings').find({ id: req.params.id }).value();
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  if (req.user.role !== 'admin' && booking.client_id !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const message = (req.body.message || '').trim();
+  const files = (req.files || []).map(f => ({
+    filename: f.filename,
+    originalname: f.originalname,
+    mimetype: f.mimetype,
+    url: `/uploads/${f.filename}`,
+  }));
+  if (!message && files.length === 0) {
+    return res.status(400).json({ error: 'A message or at least one file is required' });
+  }
+  const note = {
+    id: uuidv4(),
+    booking_id: req.params.id,
+    author_id: req.user.id,
+    author_name: req.user.name,
+    author_role: req.user.role,
+    message,
+    media: files,
+    created_at: new Date().toISOString(),
+  };
+  db.get('notes').push(note).write();
+  broadcastEvent('note_added', { booking_id: req.params.id, client_id: booking.client_id });
+  res.status(201).json(note);
 });
 
 // ─── Health ───────────────────────────────────────────────────────────────────

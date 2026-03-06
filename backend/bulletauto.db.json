@@ -17,8 +17,18 @@
       "password_hash": "$2a$10$7X8xXbXo5HzTC2T.j5DVxOlKmEtB1j01qqrddjyAuzWEDX9LNhbVO",
       "role": "client",
       "created_at": "2026-03-06T12:33:20.586Z"
+    },
+    {
+      "id": "626b4b65-78d8-4698-97d2-25b0f08a8c4a",
+      "name": "Test Driver",
+      "email": "driver@test.com",
+      "phone": "+27821234567",
+      "password_hash": "$2a$10$A6Q51KmmbGxur672Ebu7ve5RujT5QzM9fdBeU6yXKPsb1G.VjkG16",
+      "role": "client",
+      "created_at": "2026-03-06T12:56:38.126Z"
     }
   ],
   "bookings": [],
-  "service_updates": []
+  "service_updates": [],
+  "notes": []
 }
