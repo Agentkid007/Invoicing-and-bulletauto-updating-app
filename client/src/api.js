@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:4000/api';
+export const API_BASE = 'http://localhost:4000/api';
+
+const BASE = API_BASE;
 
 export function getToken() { return localStorage.getItem('ba_token'); }
 export function setToken(t) { localStorage.setItem('ba_token', t); }

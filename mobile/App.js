@@ -18,6 +18,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import BookingDetailScreen from './src/screens/BookingDetailScreen';
 import NewBookingScreen from './src/screens/NewBookingScreen';
+import InvoicesScreen from './src/screens/InvoicesScreen';
 
 // ─── Auth Context ─────────────────────────────────────────────────────────────
 export const AuthContext = createContext(null);
@@ -104,6 +105,11 @@ export default function App() {
                 name="NewBooking"
                 component={NewBookingScreen}
                 options={{ title: 'New Booking' }}
+              />
+              <Stack.Screen
+                name="Invoices"
+                component={InvoicesScreen}
+                options={{ title: 'My Invoices' }}
               />
             </>
           ) : (
