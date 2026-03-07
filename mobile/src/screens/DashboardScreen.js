@@ -171,13 +171,22 @@ export default function DashboardScreen({ navigation }) {
 
       {/* New Booking FAB (clients only) */}
       {!isAdmin && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('NewBooking')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.fabText}>+ New Booking</Text>
-        </TouchableOpacity>
+        <View style={styles.fabRow}>
+          <TouchableOpacity
+            style={[styles.fab, styles.fabSecondary]}
+            onPress={() => navigation.navigate('Invoices')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.fabSecondaryText}>🧾 Invoices</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate('NewBooking')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.fabText}>+ New Booking</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -292,10 +301,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   fab: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
+    flex: 1,
     backgroundColor: '#F5A623',
     borderRadius: 12,
     paddingVertical: 16,
@@ -306,10 +312,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
+  fabRow: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  fabSecondary: {
+    backgroundColor: '#1A237E',
+    shadowColor: '#1A237E',
+    flex: 0,
+    paddingHorizontal: 18,
+  },
   fabText: {
     color: '#0A0A0A',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  fabSecondaryText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
   logoutBtn: {
     paddingHorizontal: 12,

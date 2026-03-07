@@ -6,6 +6,7 @@ import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import NewBooking from './pages/NewBooking.jsx';
 import BookingDetail from './pages/BookingDetail.jsx';
+import ClientInvoices from './pages/ClientInvoices.jsx';
 
 function RequireAuth({ children }) {
   const location = useLocation();
@@ -42,6 +43,14 @@ export default function App() {
           element={
             <RequireAuth>
               <BookingDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <RequireAuth>
+              <ClientInvoices />
             </RequireAuth>
           }
         />

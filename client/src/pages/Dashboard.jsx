@@ -144,6 +144,10 @@ export default function Dashboard() {
           <span className="bottom-nav-icon">🏠</span>
           Home
         </button>
+        <button className="bottom-nav-item" onClick={() => navigate('/invoices')}>
+          <span className="bottom-nav-icon">🧾</span>
+          Invoices
+        </button>
         <button className="bottom-nav-item" onClick={handleLogout}>
           <span className="bottom-nav-icon">👤</span>
           Logout
